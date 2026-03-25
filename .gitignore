@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Downloaded data (large files - can be regenerated)
+data/nrc/
+data/NRC-Emotion-Lexicon.zip
+data/words_to_tag.json
+data/pdf_words.json
+data/pdf_words.txt
+
+# Temporary files
+*.tmp
+*.log

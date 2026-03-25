@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhyming Dictionary - Emotion & Syllable Filter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Rhyming Dictionary</h1>
+            <p class="subtitle">Find rhymes filtered by emotion and syllable count</p>
+        </header>
+
+        <main>
+            <section class="search-section">
+                <div class="search-box">
+                    <input type="text" id="word-input" placeholder="Enter a word..." autocomplete="off">
+                    <button id="search-btn">Find Rhymes</button>
+                </div>
+                <div id="word-info" class="word-info hidden"></div>
+            </section>
+
+            <section class="filters-section">
+                <div class="filter-group">
+                    <h3>Syllables</h3>
+                    <div class="syllable-filters">
+                        <label class="filter-chip active" data-syllables="all">
+                            <input type="radio" name="syllables" value="all" checked> All
+                        </label>
+                        <label class="filter-chip" data-syllables="1">
+                            <input type="radio" name="syllables" value="1"> 1
+                        </label>
+                        <label class="filter-chip" data-syllables="2">
+                            <input type="radio" name="syllables" value="2"> 2
+                        </label>
+                        <label class="filter-chip" data-syllables="3">
+                            <input type="radio" name="syllables" value="3"> 3
+                        </label>
+                        <label class="filter-chip" data-syllables="4+">
+                            <input type="radio" name="syllables" value="4+"> 4+
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Emotions <span class="filter-hint">(Plutchik's Wheel)</span></h3>
+                    <div class="emotion-wheel-container">
+                        <div class="emotion-filters">
+                            {% for emotion, color in colors.items() %}
+                            <label class="emotion-chip" style="--emotion-color: {{ color }};" data-emotion="{{ emotion }}">
+                                <input type="checkbox" name="emotions" value="{{ emotion }}">
+                                <span class="emotion-label">{{ emotion|capitalize }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <button id="clear-emotions" class="clear-btn">Clear Emotions</button>
+                </div>
+            </section>
+
+            <section class="results-section">
+                <div class="results-header">
+                    <h2>Results</h2>
+                    <span id="results-count" class="results-count"></span>
+                </div>
+                <div id="results" class="results-grid">
+                    <p class="placeholder">Enter a word above to find rhymes</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="legend">
+                <h4>Emotion Legend</h4>
+                <div class="legend-items">
+                    {% for emotion, color in colors.items() %}
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: {{ color }};"></span>
+                        <span>{{ emotion|capitalize }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
