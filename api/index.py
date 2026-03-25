@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import random
 from flask import Flask, render_template, jsonify, request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -225,13 +226,61 @@ def api_emotions():
     """Get the list of emotions and their colors."""
     return jsonify(EMOTION_COLORS)
 
+@app.route('/api/random')
+def api_random():
+    """Get a random word matching the filters."""
+    syllables = request.args.get('syllables', 'all')
+    emotions = request.args.getlist('emotions')
+    
+    # Build list of candidate words
+    candidates = []
+    
+    # If emotion filter is active, start with emotion-tagged words
+    if emotions and len(emotions) > 0:
+        candidate_set = set()
+        for emotion in emotions:
+            if emotion in emotion_words:
+                candidate_set.update(word.lower() for word in emotion_words[emotion])
+        candidates = list(candidate_set)
+    else:
+        # Use all words from pronunciations
+        candidates = list(pronunciations.keys())
+    
+    # Apply syllable filter
+    if syllables and syllables != "all":
+        filtered = []
+        for word in candidates:
+            syl_count = get_syllable_count(word)
+            if syllables == "4+":
+                if syl_count >= 4:
+                    filtered.append(word)
+            elif syl_count == int(syllables):
+                filtered.append(word)
+        candidates = filtered
+    
+    if not candidates:
+        return jsonify({
+            "error": "No words match your filters",
+            "word": None
+        })
+    
+    # Pick a random word
+    word = random.choice(candidates)
+    
+    return jsonify({
+        "word": word,
+        "syllables": get_syllable_count(word),
+        "emotions": get_word_emotions(word)
+    })
+
 @app.route('/health')
 def health():
     """Health check endpoint."""
     return jsonify({
         "status": "ok",
         "words_loaded": len(pronunciations),
-        "emotions_loaded": len(word_to_emotions)
+        "emotions_loaded": len(word_to_emotions),
+        "emotion_categories": list(emotion_words.keys())
     })
 
 # Initialize data on module load

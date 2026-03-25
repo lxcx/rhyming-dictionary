@@ -18,6 +18,7 @@
                 <div class="search-box">
                     <input type="text" id="word-input" placeholder="Enter a word..." autocomplete="off">
                     <button id="search-btn">Find Rhymes</button>
+                    <button id="random-btn" class="random-btn" title="Get a random word matching your filters">Random</button>
                 </div>
                 <div id="word-info" class="word-info hidden"></div>
             </section>
@@ -84,6 +85,25 @@
                 </div>
             </div>
         </footer>
+    </div>
+
+    <!-- Word Details Modal -->
+    <div id="word-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h3 id="modal-word"></h3>
+            <div id="modal-info"></div>
+            <div class="external-links">
+                <h4>Look up:</h4>
+                <div class="link-buttons">
+                    <a id="link-dictionary" href="#" target="_blank" class="ext-link">Dictionary</a>
+                    <a id="link-thesaurus" href="#" target="_blank" class="ext-link">Thesaurus</a>
+                    <a id="link-wiktionary" href="#" target="_blank" class="ext-link">Wiktionary</a>
+                    <a id="link-rhymezone" href="#" target="_blank" class="ext-link">RhymeZone</a>
+                </div>
+            </div>
+            <button id="modal-search" class="modal-search-btn">Find rhymes for this word</button>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
