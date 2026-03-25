@@ -155,7 +155,28 @@ def api_emotions():
     """Get the list of emotions and their colors."""
     return jsonify(EMOTION_COLORS)
 
-load_emotion_data()
+try:
+    load_emotion_data()
+except Exception as e:
+    print(f"Error loading emotion data: {e}")
+
+@app.route('/health')
+def health():
+    """Health check endpoint for debugging."""
+    import sys
+    return jsonify({
+        "status": "ok",
+        "emotion_words_loaded": len(word_to_emotions),
+        "base_dir": BASE_DIR,
+        "python_version": sys.version,
+        "data_path_exists": os.path.exists(os.path.join(BASE_DIR, 'data', 'emotions.json')),
+        "templates_path_exists": os.path.exists(os.path.join(BASE_DIR, 'templates'))
+    })
+
+@app.route('/test')
+def test():
+    """Simple test endpoint."""
+    return "Hello from Flask!"
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
