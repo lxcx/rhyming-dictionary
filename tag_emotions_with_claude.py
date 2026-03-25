@@ -4,13 +4,19 @@ Emotion Tagging Script using Claude API
 This script sends untagged words to Claude for emotion classification
 based on Plutchik's Wheel of Emotions.
 
-Run with: python tag_emotions_with_claude.py
+Run with: python tag_emotions_with_claude.py [--start-letter X]
+
+Examples:
+  python tag_emotions_with_claude.py              # Process all untagged words
+  python tag_emotions_with_claude.py --start-letter h   # Start from letter H
+  python tag_emotions_with_claude.py -s h         # Short form
 """
 
 import json
 import os
 import time
 import sys
+import argparse
 
 try:
     import anthropic
@@ -61,16 +67,16 @@ def get_untagged_words(cmu_words, emotion_data):
     
     return sorted(cmu_words - tagged_words)
 
-def load_progress():
+def load_progress(progress_file=PROGRESS_FILE):
     """Load progress from previous run if it exists."""
-    if os.path.exists(PROGRESS_FILE):
-        with open(PROGRESS_FILE, "r", encoding="utf-8") as f:
+    if os.path.exists(progress_file):
+        with open(progress_file, "r", encoding="utf-8") as f:
             return json.load(f)
     return {"processed_count": 0, "results": {}}
 
-def save_progress(progress):
+def save_progress(progress, progress_file=PROGRESS_FILE):
     """Save current progress."""
-    with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
+    with open(progress_file, "w", encoding="utf-8") as f:
         json.dump(progress, f, indent=2)
 
 def save_results(emotion_data, new_tags):
@@ -151,11 +157,29 @@ Respond ONLY with the JSON object, no other text."""
         print(f"  Warning: Failed to parse JSON response: {e}")
         print(f"  Response was: {response_text[:200]}...")
         return {}
+    except anthropic.BadRequestError as e:
+        if "credit balance" in str(e).lower():
+            print(f"  ERROR: Insufficient API credits!")
+            print(f"  Please add credits at https://console.anthropic.com/")
+            raise SystemExit(1)
+        print(f"  Error calling Claude API: {e}")
+        return {}
     except Exception as e:
         print(f"  Error calling Claude API: {e}")
         return {}
 
 def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Tag words with emotions using Claude API")
+    parser.add_argument("-s", "--start-letter", type=str, default=None,
+                        help="Start from words beginning with this letter (e.g., 'h')")
+    parser.add_argument("--end-letter", type=str, default=None,
+                        help="End at words beginning with this letter (inclusive)")
+    args = parser.parse_args()
+    
+    start_letter = args.start_letter.lower() if args.start_letter else None
+    end_letter = args.end_letter.lower() if args.end_letter else None
+    
     # Check for API key
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -188,6 +212,18 @@ def main():
     cmu_words = load_cmu_words()
     untagged = get_untagged_words(cmu_words, emotion_data)
     
+    # Filter by starting letter if specified
+    progress_file = PROGRESS_FILE
+    if start_letter:
+        if end_letter:
+            untagged = [w for w in untagged if start_letter <= w[0].lower() <= end_letter]
+            print(f"\nFiltering words from '{start_letter.upper()}' to '{end_letter.upper()}'")
+            progress_file = f"data/tagging_progress_{start_letter}_{end_letter}.json"
+        else:
+            untagged = [w for w in untagged if w[0].lower() >= start_letter]
+            print(f"\nFiltering words starting from '{start_letter.upper()}'")
+            progress_file = f"data/tagging_progress_{start_letter}.json"
+    
     print(f"  Total words in CMU dictionary: {len(cmu_words):,}")
     print(f"  Currently tagged words: {sum(len(w) for w in emotion_data.values()):,}")
     print(f"  Words to process: {len(untagged):,}")
@@ -197,7 +233,7 @@ def main():
         return
     
     # Load progress
-    progress = load_progress()
+    progress = load_progress(progress_file)
     start_index = progress["processed_count"]
     all_results = progress["results"]
     
@@ -245,7 +281,7 @@ def main():
             
             # Save periodically
             if (batch_num % SAVE_INTERVAL == 0) or (i + BATCH_SIZE >= len(remaining)):
-                save_progress(progress)
+                save_progress(progress, progress_file)
                 save_results(emotion_data.copy(), all_results)
                 print(f"  Progress saved ({progress['processed_count']:,} words processed, {len(all_results):,} tagged)")
             
@@ -255,7 +291,7 @@ def main():
     
     except KeyboardInterrupt:
         print("\n\nInterrupted! Saving progress...")
-        save_progress(progress)
+        save_progress(progress, progress_file)
         save_results(emotion_data.copy(), all_results)
         print(f"Progress saved. Run the script again to resume.")
         return
@@ -264,8 +300,8 @@ def main():
     save_results(emotion_data, all_results)
     
     # Clean up progress file
-    if os.path.exists(PROGRESS_FILE):
-        os.remove(PROGRESS_FILE)
+    if os.path.exists(progress_file):
+        os.remove(progress_file)
     
     print("\n" + "=" * 60)
     print("COMPLETE!")

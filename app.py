@@ -64,11 +64,67 @@ def get_syllable_count(word):
     
     return max(1, count)
 
+def normalize_reduced_vowels(phones):
+    """Normalize reduced/unstressed vowels that sound similar.
+    In unstressed positions, AH0, IH0, and AX0 are nearly indistinguishable."""
+    reduced_vowels = {'AH0', 'IH0', 'AX0', 'IX0'}
+    return ' '.join('AH0' if p in reduced_vowels else p for p in phones.split())
+
+def get_rhyming_part(phones):
+    """Extract the rhyming part (from last stressed vowel to end) and normalize it."""
+    phone_list = phones.split()
+    # Find the last stressed vowel (ends with 1 or 2)
+    last_stress_idx = -1
+    for i, phone in enumerate(phone_list):
+        if phone[-1] in '12':
+            last_stress_idx = i
+    
+    if last_stress_idx == -1:
+        # No stress found, use whole pronunciation
+        rhyme_part = phones
+    else:
+        rhyme_part = ' '.join(phone_list[last_stress_idx:])
+    
+    return normalize_reduced_vowels(rhyme_part)
+
+# Build rhyme lookup table at startup for fast flexible matching
+rhyme_lookup = {}
+
+def build_rhyme_lookup():
+    """Build a lookup table mapping normalized rhyme endings to words."""
+    global rhyme_lookup
+    print("Building flexible rhyme lookup table...")
+    
+    all_words = pronouncing.search('.*')
+    for word in all_words:
+        phones = pronouncing.phones_for_word(word)
+        if phones:
+            rhyme_part = get_rhyming_part(phones[0])
+            if rhyme_part not in rhyme_lookup:
+                rhyme_lookup[rhyme_part] = []
+            rhyme_lookup[rhyme_part].append(word)
+    
+    print(f"Built rhyme lookup with {len(rhyme_lookup)} unique rhyme patterns")
+
 def get_rhymes(word):
-    """Get rhyming words for the given word."""
+    """Get rhyming words for the given word with improved matching.
+    Uses flexible matching for reduced vowels in unstressed syllables."""
     word = word.lower().strip()
-    rhymes = pronouncing.rhymes(word)
-    return rhymes
+    
+    # Get pronunciation for target word
+    pronunciations = pronouncing.phones_for_word(word)
+    if not pronunciations:
+        # Fall back to standard if word not in dictionary
+        return pronouncing.rhymes(word)
+    
+    # Get normalized rhyming part
+    target_rhyme = get_rhyming_part(pronunciations[0])
+    
+    # Look up all words with matching normalized rhyme
+    matches = rhyme_lookup.get(target_rhyme, [])
+    
+    # Remove the input word itself
+    return [w for w in matches if w != word]
 
 def get_word_emotions(word):
     """Get the emotions associated with a word."""
@@ -157,8 +213,9 @@ def api_emotions():
 
 try:
     load_emotion_data()
+    build_rhyme_lookup()
 except Exception as e:
-    print(f"Error loading emotion data: {e}")
+    print(f"Error loading data: {e}")
 
 @app.route('/health')
 def health():

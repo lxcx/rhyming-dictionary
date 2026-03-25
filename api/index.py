@@ -60,8 +60,14 @@ def load_cmu_dict():
                     rhyme_index[rhyme_part] = set()
                 rhyme_index[rhyme_part].add(word)
 
+def normalize_reduced_vowels(phones):
+    """Normalize reduced/unstressed vowels that sound similar.
+    In unstressed positions, AH0, IH0, and AX0 are nearly indistinguishable."""
+    reduced_vowels = {'AH0', 'IH0', 'AX0', 'IX0'}
+    return ' '.join('AH0' if p in reduced_vowels else p for p in phones.split())
+
 def get_rhyme_part(phones):
-    """Extract the rhyming part (last stressed vowel to end)."""
+    """Extract the rhyming part (last stressed vowel to end) with normalized reduced vowels."""
     phone_list = phones.split()
     
     # Find last stressed vowel (marked with 1 or 2)
@@ -79,8 +85,9 @@ def get_rhyme_part(phones):
     if last_stressed == -1:
         return None
     
-    # Return phones from stressed vowel to end
-    return ' '.join(phone_list[last_stressed:])
+    # Return normalized phones from stressed vowel to end
+    rhyme_part = ' '.join(phone_list[last_stressed:])
+    return normalize_reduced_vowels(rhyme_part)
 
 def get_syllable_count(word):
     """Count syllables based on vowel sounds in pronunciation."""
