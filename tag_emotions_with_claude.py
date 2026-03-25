@@ -175,6 +175,8 @@ def main():
                         help="Start from words beginning with this letter (e.g., 'h')")
     parser.add_argument("--end-letter", type=str, default=None,
                         help="End at words beginning with this letter (inclusive)")
+    parser.add_argument("-y", "--yes", action="store_true",
+                        help="Skip confirmation prompt and run automatically")
     args = parser.parse_args()
     
     start_letter = args.start_letter.lower() if args.start_letter else None
@@ -254,10 +256,13 @@ def main():
     
     # Confirm
     print("\n" + "=" * 60)
-    response = input("Continue? (y/n): ").strip().lower()
-    if response != "y":
-        print("Aborted.")
-        return
+    if args.yes:
+        print("Auto-confirmed with --yes flag")
+    else:
+        response = input("Continue? (y/n): ").strip().lower()
+        if response != "y":
+            print("Aborted.")
+            return
     
     print("\nStarting emotion tagging...")
     print("(Press Ctrl+C to stop - progress will be saved)\n")
