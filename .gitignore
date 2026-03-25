@@ -29,3 +29,4 @@ data/pdf_words.txt
 # Temporary files
 *.tmp
 *.log
+.vercel
